@@ -39,7 +39,7 @@ const email = createEmailServiceFromConfig(config);
 const app = createApp({ db, email, config });
 
 const server = app.listen(config.port, () => {
-  console.log(`İhracat Teklif Asistanı → http://localhost:${config.port}  (${config.env})`);
+  console.log(`EasyHustle → http://localhost:${config.port}  (${config.env})`);
   console.log(`Sağlık kontrolü: http://localhost:${config.port}/api/health`);
   console.log(isAiConfigured() ? `Mod: AI (${MODEL})` : 'Mod: DEMO (kural tabanlı) — AI için .env dosyasına ANTHROPIC_API_KEY ekleyin.');
   console.log(`Veritabanı: ${config.databaseUrl.startsWith('file:') ? config.databaseUrl : config.databaseUrl.replace(/\/\/[^@]*@/, '//***@')}`);

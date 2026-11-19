@@ -1,7 +1,7 @@
 {
-  "name": "ihracat-teklif-ai",
+  "name": "easyhustle",
   "version": "0.1.0",
-  "description": "AI destekli ihracat teklif ve e-posta yönetim sistemi (demo)",
+  "description": "EasyHustle — AI destekli ihracat teklif ve e-posta yönetim sistemi (demo)",
   "main": "server.js",
   "scripts": {
     "postinstall": "prisma generate",

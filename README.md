@@ -1,6 +1,8 @@
-# İhracat Teklif Asistanı
+# EasyHustle
 
 AI destekli ihracat teklif ve e-posta yönetim sistemi (demo sürüm).
+
+> Kurulum ve yerel demo: **[KURULUM.md](KURULUM.md)** · Lisans: [MIT](LICENSE)
 
 Gelen müşteri taleplerini analiz eder, ürün kataloğuyla eşleştirir, fiyatları hesaplar ve firmaya **gönderime hazır teklif e-postası taslağı** üretir.
 

@@ -169,7 +169,9 @@ if (withHistory) {
         const type = raw.subarray(0, nul).toString().split(' ')[0];
         const body = raw.subarray(nul + 1);
         if (type === 'tree' || isBinary(body)) continue;
-        history.findings.push(...scanText(`git:${type}:${d}${f.slice(0, 6)}`, body.toString('utf8'), { generic: true }));
+        // Gevşek nesnelerde dosya yolu bilinmez (testlerdeki sahte şifreler ayırt edilemez): genel "password = ..."
+        // kuralı yerine yalnızca kesin anahtar desenleri ve yerel .env değerleriyle birebir karşılaştırma yapılır.
+        history.findings.push(...scanText(`git:${type}:${d}${f.slice(0, 6)}`, body.toString('utf8'), { generic: false }));
       }
     }
     for (const f of ['COMMIT_EDITMSG', 'config', 'logs/HEAD']) {

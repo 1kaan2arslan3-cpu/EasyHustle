@@ -101,7 +101,7 @@ Veritabanını **sıfırlamak** (tüm hesaplar silinir): sunucuyu durdurun, `dat
 Başarılı açılışta konsolda şunlara benzer satırlar görünür:
 
 ```
-İhracat Teklif Asistanı → http://localhost:3000  (development)
+EasyHustle → http://localhost:3000  (development)
 Sağlık kontrolü: http://localhost:3000/api/health
 Mod: DEMO (kural tabanlı) — AI için .env dosyasına ANTHROPIC_API_KEY ekleyin.
 Veritabanı: file:.../data/dev.db
