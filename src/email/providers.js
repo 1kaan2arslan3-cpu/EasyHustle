@@ -61,6 +61,68 @@ export function createResendProvider({ apiKey, baseUrl = 'https://api.resend.com
   };
 }
 
+/** "Ad <adres@alan.com>" veya "adres@alan.com" → { name?, email } */
+export function parseMailbox(value) {
+  const m = /^\s*(.*?)\s*<\s*([^<>\s]+)\s*>\s*$/.exec(value);
+  if (m) {
+    const name = m[1].replace(/^"(.*)"$/, '$1').trim();
+    return name ? { name, email: m[2] } : { email: m[2] };
+  }
+  return { email: String(value).trim() };
+}
+
+/**
+ * Brevo (eski adı Sendinblue) HTTP API (https://developers.brevo.com/reference/sendtransacemail).
+ * HTTPS üzerinden çalışır: SMTP portlarını engelleyen platformlarda (ör. Railway Trial/Hobby) da gönderir.
+ * Gönderen adres Brevo'da doğrulanmış olmalıdır (Senders & IP → Senders; ör. kendi Gmail adresiniz).
+ * @param {{ apiKey: string, baseUrl?: string, fetchImpl?: typeof fetch, timeoutMs?: number }} opts
+ */
+export function createBrevoProvider({ apiKey, baseUrl = 'https://api.brevo.com/v3', fetchImpl = fetch, timeoutMs = 10_000 }) {
+  if (!apiKey) throw new Error('Brevo API anahtarı gerekli.');
+  return {
+    name: 'brevo',
+    delivers: true,
+    async send({ from, to, subject, html, text, replyTo }) {
+      const payload = {
+        sender: parseMailbox(from),
+        to: [{ email: to }],
+        subject,
+        htmlContent: html,
+        textContent: text,
+        ...(replyTo ? { replyTo: parseMailbox(replyTo) } : {}),
+      };
+      let res;
+      try {
+        res = await fetchImpl(`${baseUrl}/smtp/email`, {
+          method: 'POST',
+          headers: { 'api-key': apiKey, 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify(payload),
+          signal: AbortSignal.timeout(timeoutMs),
+        });
+      } catch (err) {
+        const timedOut = err?.name === 'TimeoutError' || err?.name === 'AbortError';
+        throw new EmailSendError(timedOut ? 'E-posta servisi zamanında yanıt vermedi.' : 'E-posta servisine bağlanılamadı.', { retryable: true });
+      }
+
+      let body = null;
+      try {
+        body = await res.json();
+      } catch {
+        /* gövde JSON değil */
+      }
+      if (!res.ok || !body?.messageId) {
+        const providerMessage = typeof body?.message === 'string' ? body.message.slice(0, 300) : `HTTP ${res.status}`;
+        throw new EmailSendError(`E-posta servisi hata döndürdü: ${providerMessage}`, {
+          status: res.status,
+          providerCode: typeof body?.code === 'string' ? body.code : null,
+          retryable: res.status === 429 || res.status >= 500,
+        });
+      }
+      return { id: body.messageId };
+    },
+  };
+}
+
 /**
  * E-posta servisi tanımlı değilken: e-posta gönderilmez.
  *   Geliştirme: içerik (doğrulama/sıfırlama bağlantıları dahil) konsola yazılır, böylece akış denenebilir.

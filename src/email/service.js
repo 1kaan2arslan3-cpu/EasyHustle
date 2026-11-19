@@ -5,7 +5,7 @@
 //   sent: true     → sağlayıcı e-postayı kabul etti
 //   sent: false    → geliştirme modu (delivery: 'console'), e-posta gönderilmedi
 //   hata           → EmailSendError fırlatılır; çağıran taraf "gönderildi" demez
-import { createConsoleProvider, createResendProvider, EmailSendError } from './providers.js';
+import { createBrevoProvider, createConsoleProvider, createResendProvider, EmailSendError } from './providers.js';
 import { passwordResetEmail, plainTextToHtml, verificationEmail } from './templates.js';
 
 export { EmailSendError };
@@ -49,11 +49,13 @@ export function createEmailService({ provider, from, replyTo = null, appUrl, app
   };
 }
 
-/** Yapılandırmadan servis: RESEND_API_KEY varsa Resend, yoksa geliştirme (konsol) modu. */
+/** Yapılandırmadan servis: BREVO_API_KEY varsa Brevo, yoksa RESEND_API_KEY varsa Resend, ikisi de yoksa geliştirme (konsol) modu. */
 export function createEmailServiceFromConfig(config) {
-  const { resendApiKey, resendApiUrl, from, replyTo } = config.email;
-  const provider = resendApiKey
-    ? createResendProvider({ apiKey: resendApiKey, baseUrl: resendApiUrl })
-    : createConsoleProvider({ redact: config.isProduction }); // canlıda token'lar günlüğe yazılmaz
+  const { brevoApiKey, brevoApiUrl, resendApiKey, resendApiUrl, from, replyTo } = config.email;
+  const provider = brevoApiKey
+    ? createBrevoProvider({ apiKey: brevoApiKey, baseUrl: brevoApiUrl })
+    : resendApiKey
+      ? createResendProvider({ apiKey: resendApiKey, baseUrl: resendApiUrl })
+      : createConsoleProvider({ redact: config.isProduction }); // canlıda token'lar günlüğe yazılmaz
   return createEmailService({ provider, from, replyTo, appUrl: config.appUrl, appName: config.appName });
 }

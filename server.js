@@ -46,11 +46,11 @@ const server = app.listen(config.port, () => {
   // API anahtarı asla yazdırılmaz; yalnızca sağlayıcı adı ve gönderen adresi
   console.log(
     email.delivers
-      ? `E-posta: Resend ile gönderiliyor (gönderen: ${config.email.from})`
-      : 'E-posta: geliştirme modu (gönderilmez, konsola yazılır) — göndermek için .env dosyasına RESEND_API_KEY ekleyin.',
+      ? `E-posta: ${email.providerName === 'brevo' ? 'Brevo' : 'Resend'} ile gönderiliyor (gönderen: ${config.email.from})`
+      : 'E-posta: geliştirme modu (gönderilmez, konsola yazılır) — göndermek için .env dosyasına BREVO_API_KEY veya RESEND_API_KEY ekleyin.',
   );
   if (config.corsOrigins.length) console.log(`CORS izinli adresler: ${config.corsOrigins.join(', ')}`);
-  if (config.isProduction && !email.delivers) console.warn('UYARI: Canlı ortamda RESEND_API_KEY tanımlı değil; doğrulama/sıfırlama e-postaları gönderilmeyecek.');
+  if (config.isProduction && !email.delivers) console.warn('UYARI: Canlı ortamda BREVO_API_KEY / RESEND_API_KEY tanımlı değil; doğrulama/sıfırlama e-postaları gönderilmeyecek.');
 });
 
 server.on('error', (err) => {

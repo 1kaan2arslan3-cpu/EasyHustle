@@ -55,7 +55,8 @@ Tamamı `.env.example` dosyasında açıklamalarıyla birlikte listelidir. Yerel
 | `PORT` | `3000` | Port doluysa | Sunucu portu. |
 | `APP_URL` | `http://localhost:PORT` | Canlıda zorunlu (`https://`) | E-postadaki bağlantıların adresi. |
 | `DATABASE_URL` | `file:./data/dev.db` | — | SQLite dosyası (proje klasörüne göre). PostgreSQL için `postgresql://...` |
-| `RESEND_API_KEY` | *(boş)* | Gerçek e-posta için | `re_...` — **gizli**. Boşsa e-postalar gönderilmez, konsola yazılır. |
+| `BREVO_API_KEY` | *(boş)* | Alan adsız gerçek e-posta için | `xkeysib-...` — **gizli**. Tanımlıysa Resend yerine Brevo kullanılır; `MAIL_FROM` zorunlu (§6.4). |
+| `RESEND_API_KEY` | *(boş)* | Gerçek e-posta için | `re_...` — **gizli**. İkisi de boşsa e-postalar gönderilmez, konsola yazılır. |
 | `MAIL_FROM` | `EasyHustle <onboarding@resend.dev>` | Canlıda zorunlu | Resend'de doğrulanmış alan adından gönderen adres. |
 | `MAIL_REPLY_TO` | *(boş)* | — | Yanıtların gideceği adres. |
 | `APP_NAME` | `EasyHustle` | — | E-postalardaki marka adı. |
@@ -147,6 +148,23 @@ Tarayıcıda **http://localhost:3000** adresini açın. Sunucuyu durdurmak için
 5. Sunucuyu yeniden başlatın. Konsolda `E-posta: Resend ile gönderiliyor (gönderen: ...)` görünmelidir.
 
 > Ücretsiz planın günlük / aylık gönderim limitleri vardır; güncel limitler için Resend fiyatlandırma sayfasına bakın. Gönderim geçmişi ve hatalar Resend panelinde **Emails / Logs** altında görünür.
+
+### 6.4 Alan adı olmadan herkese gönderim: Brevo
+
+Alan adınız yoksa Brevo, doğruladığınız tek bir e-posta adresinden (ör. Gmail) herkese gönderim yapabilir. HTTPS API kullandığı için SMTP'yi engelleyen platformlarda (Railway Trial/Hobby) da çalışır. `BREVO_API_KEY` tanımlıysa Resend yerine Brevo kullanılır.
+
+1. https://www.brevo.com → ücretsiz hesap açın (ücretsiz planda günde 300 e-posta).
+2. **Senders, Domains & Dedicated IPs → Senders → Add a sender** → gönderen adı `EasyHustle`, e-posta: kendi Gmail adresiniz. Brevo'nun bu adrese gönderdiği onay e-postasındaki bağlantıya tıklayın.
+3. **SMTP & API → API Keys → Generate a new API key** → `xkeysib-` ile başlayan anahtarı kopyalayın (**gizli**; SMTP anahtarı `xsmtpsib-` değil, API anahtarı gerekir).
+4. `.env` dosyasına (ve canlıda Railway → Variables'a) **kendiniz** yazın:
+   ```
+   BREVO_API_KEY=xkeysib-xxxxxxxx
+   MAIL_FROM="EasyHustle <adiniz@gmail.com>"
+   ```
+   `MAIL_FROM`, 2. adımda doğruladığınız adresle **aynı** olmalıdır (Brevo ile zorunlu).
+5. Sunucuyu yeniden başlatın. Konsolda `E-posta: Brevo ile gönderiliyor (gönderen: ...)` görünmelidir.
+
+> Alan adı doğrulaması olmadan Gmail adresiyle gönderilen e-postalar bazı alıcılarda **spam** klasörüne düşebilir; kullanıcılara spam klasörüne bakmalarını söyleyin. Gönderim geçmişi Brevo → **Transactional → Logs** altındadır. Brevo bazı yeni hesaplarda gönderimi açmadan önce kısa bir hesap onayı isteyebilir.
 
 ---
 
@@ -247,14 +265,15 @@ Repo, Railway'in doğrudan kullanacağı dosyaları içerir: `Dockerfile` (Node 
    | `APP_URL` | `https://<ad>.up.railway.app` (3. adımdaki adres, sonda `/` olmadan) |
    | `DATABASE_URL` | `file:/data/easyhustle.db` |
    | `TRUST_PROXY` | `true` |
-   | `MAIL_FROM` | `EasyHustle <onboarding@resend.dev>` — kendi alan adınızı doğruladıysanız `EasyHustle <no-reply@alanadiniz.com>` |
-   | `RESEND_API_KEY` | Resend anahtarınız (`re_...`) — **kendiniz yapıştırın**, başka yere yazmayın |
+   | `BREVO_API_KEY` | Brevo API anahtarınız (`xkeysib-...`, §6.4) — **kendiniz yapıştırın**, başka yere yazmayın |
+   | `MAIL_FROM` | Brevo ile: `EasyHustle <brevoda-dogrulanan@gmail.com>`. Resend ile: `EasyHustle <onboarding@resend.dev>` veya doğrulanmış alan adınızdan bir adres |
+   | `RESEND_API_KEY` | *(Brevo yerine Resend kullanacaksanız)* Resend anahtarınız (`re_...`) |
 
    `NODE_ENV` ve `PORT` gerekmez (imaj `production` ile başlar, portu Railway verir).
-6. **Deploy** → **Deployments → View logs**: `All migrations have been successfully applied`, `EasyHustle → … (production)` ve `E-posta: Resend ile gönderiliyor` satırlarını görmelisiniz.
+6. **Deploy** → **Deployments → View logs**: `All migrations have been successfully applied`, `EasyHustle → … (production)` ve `E-posta: Brevo ile gönderiliyor` (veya `Resend ile`) satırlarını görmelisiniz.
 7. Kontrol: `https://<ad>.up.railway.app/api/health` → `{"status":"ok", … "database":"ok"}`.
 
-> **E-posta sınırı:** `onboarding@resend.dev` yalnızca Resend hesabınızın sahibine gönderir. Başkalarının doğrulama e-postası alabilmesi için §6.3'teki gibi alan adınızı doğrulayıp `MAIL_FROM`'u değiştirin.
+> **E-posta sınırı:** `onboarding@resend.dev` yalnızca Resend hesabınızın sahibine gönderir. Alan adı olmadan herkese göndermek için Brevo kullanın (§6.4); alan adınız varsa §6.3'teki gibi Resend'de doğrulayın. Railway Trial/Hobby planları SMTP portlarını engellediğinden Gmail SMTP canlıda çalışmaz; Brevo ve Resend HTTPS kullandığı için etkilenmez.
 >
 > **Maliyet:** Railway deneme kredisiyle başlar; sonrasında kullanım bazlı ücretlidir (güncel fiyatlar Railway sitesinde). Servisi durdurmak için proje → Settings → **Delete / Remove**.
 

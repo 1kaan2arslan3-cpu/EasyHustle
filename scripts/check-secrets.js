@@ -16,6 +16,8 @@ const withHistory = process.argv.includes('--history');
 // ---- Desenler -------------------------------------------------------------------------
 const PATTERNS = [
   ['Resend API anahtarı', /\bre_[A-Za-z0-9_]{20,}/g],
+  ['Brevo API anahtarı', /\bxkeysib-[A-Za-z0-9-]{20,}/g],
+  ['Brevo SMTP anahtarı', /\bxsmtpsib-[A-Za-z0-9-]{20,}/g],
   ['Anthropic API anahtarı', /sk-ant-[A-Za-z0-9_-]{20,}/g],
   ['OpenAI API anahtarı', /\bsk-(?:proj-)?[A-Za-z0-9_-]{32,}/g],
   ['AWS erişim anahtarı', /\b(?:AKIA|ASIA)[0-9A-Z]{16}\b/g],
@@ -93,7 +95,7 @@ function localSecretValues() {
       if (!m) continue;
       const [, key, value] = m;
       // Gizli olmayan ayarları atla
-      if (!value || value.length < 8 || /^(NODE_ENV|PORT|APP_URL|APP_NAME|CORS_ORIGINS|TRUST_PROXY|COOKIE_SAMESITE|EMAIL_VERIFICATION_TTL_HOURS|CLAUDE_MODEL|CLAUDE_EFFORT|DEMO_MODE|MAIL_FROM|MAIL_REPLY_TO|RESEND_API_URL)$/.test(key)) continue;
+      if (!value || value.length < 8 || /^(NODE_ENV|PORT|APP_URL|APP_NAME|CORS_ORIGINS|TRUST_PROXY|COOKIE_SAMESITE|EMAIL_VERIFICATION_TTL_HOURS|CLAUDE_MODEL|CLAUDE_EFFORT|DEMO_MODE|MAIL_FROM|MAIL_REPLY_TO|RESEND_API_URL|BREVO_API_URL|SMTP_HOST|SMTP_PORT)$/.test(key)) continue;
       if (key === 'DATABASE_URL' && value.startsWith('file:')) continue;
       values.push({ key, value, file: f });
     }

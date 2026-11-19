@@ -35,6 +35,13 @@ const EnvSchema = z.object({
     .optional()
     .refine((v) => !v || /^re_[A-Za-z0-9_]{8,}$/.test(v), 'Resend API anahtarı "re_" ile başlamalı (resend.com → API Keys).'),
   RESEND_API_URL: z.string().trim().url().default('https://api.resend.com'),
+  // ---- E-posta (Brevo) — tanımlıysa Resend yerine kullanılır ----
+  BREVO_API_KEY: z
+    .string()
+    .trim()
+    .optional()
+    .refine((v) => !v || /^xkeysib-[A-Za-z0-9-]{20,}$/.test(v), 'Brevo API anahtarı "xkeysib-" ile başlamalı (Brevo → SMTP & API → API Keys).'),
+  BREVO_API_URL: z.string().trim().url().default('https://api.brevo.com/v3'),
   MAIL_FROM: z.string().trim().optional(),
   MAIL_REPLY_TO: z.string().trim().optional(),
   EMAIL_VERIFICATION_TTL_HOURS: z.coerce.number().int().min(1).max(168).default(24),
@@ -81,6 +88,9 @@ export function loadConfig(env, rootDir) {
       throw new Error(`${name} geçersiz: "${value}". Biçim: "Ad <adres@alanadi.com>" veya "adres@alanadi.com".`);
     }
   }
+  if (e.BREVO_API_KEY && !e.MAIL_FROM) {
+    throw new Error('BREVO_API_KEY ile MAIL_FROM tanımlanmalıdır (Brevo\'da doğrulanmış gönderen adresi, ör. "EasyHustle <adin@gmail.com>").');
+  }
   if (isProduction && e.RESEND_API_KEY && !e.MAIL_FROM) {
     throw new Error('Canlı ortamda MAIL_FROM tanımlanmalıdır (Resend\'de doğrulanmış alan adınızdan bir adres).');
   }
@@ -97,6 +107,8 @@ export function loadConfig(env, rootDir) {
     appName: e.APP_NAME,
     email: {
       // Anahtar yalnızca e-posta sağlayıcısına iletilir; hiçbir yanıtta veya günlükte yer almaz.
+      brevoApiKey: e.BREVO_API_KEY || null,
+      brevoApiUrl: e.BREVO_API_URL.replace(/\/+$/, ''),
       resendApiKey: e.RESEND_API_KEY || null,
       resendApiUrl: e.RESEND_API_URL.replace(/\/+$/, ''),
       from: mailFrom,
