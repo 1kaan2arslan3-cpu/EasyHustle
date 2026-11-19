@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>İhracat Teklif Asistanı</title>
+  <meta name="description" content="AI destekli ihracat teklif ve e-posta yönetim sistemi">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%231d4ed8'/><path d='M8 21l8-11 8 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">▲</span>
+      <div>
+        <h1>İhracat Teklif Asistanı</h1>
+        <p class="tagline">Gelen talepten gönderime hazır teklife</p>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <span id="modeBadge" class="badge">Bağlanıyor…</span>
+      <button id="settingsBtn" class="btn ghost" type="button">Firma ayarları</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <!-- Sol panel: gelen kutusu -->
+    <aside class="inbox">
+      <div class="inbox-head">
+        <h2>Gelen talepler</h2>
+        <button id="newRequestBtn" class="btn small" type="button">+ Yeni</button>
+      </div>
+      <ul id="inboxList" class="inbox-list"></ul>
+
+      <div class="inbox-head saved-head">
+        <h2>Kayıtlı teklifler</h2>
+      </div>
+      <ul id="savedList" class="inbox-list"></ul>
+    </aside>
+
+    <main class="workspace">
+      <!-- 1. Talep -->
+      <section class="card" id="requestCard">
+        <div class="card-head">
+          <h2><span class="step">1</span> Müşteri talebi</h2>
+        </div>
+        <div class="grid-2">
+          <label>Gönderen
+            <input id="reqFrom" type="text" placeholder="Ad Soyad <eposta@firma.com>">
+          </label>
+          <label>Konu
+            <input id="reqSubject" type="text" placeholder="Fiyat talebi">
+          </label>
+        </div>
+        <label>E-posta içeriği
+          <textarea id="reqBody" rows="9" placeholder="Müşteriden gelen e-postayı buraya yapıştırın…"></textarea>
+        </label>
+        <div class="actions">
+          <button id="analyzeBtn" class="btn primary" type="button">Talebi analiz et</button>
+          <span id="analyzeStatus" class="muted"></span>
+        </div>
+      </section>
+
+      <!-- 2. Analiz -->
+      <section class="card hidden" id="analysisCard">
+        <div class="card-head">
+          <h2><span class="step">2</span> Analiz</h2>
+          <span id="analysisSource" class="pill"></span>
+        </div>
+        <p id="analysisSummary" class="summary"></p>
+        <div id="analysisWarning" class="alert warn hidden"></div>
+        <dl id="analysisFacts" class="facts"></dl>
+        <h3>Talep edilen kalemler</h3>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>Müşterinin ifadesi</th><th>Eşleşen ürün</th><th class="num">Miktar</th><th>Not</th></tr></thead>
+            <tbody id="itemsBody"></tbody>
+          </table>
+        </div>
+        <div class="grid-2 notes">
+          <div>
+            <h3>Eksik bilgiler</h3>
+            <ul id="missingList" class="list warn-list"></ul>
+          </div>
+          <div>
+            <h3>Satış notları</h3>
+            <ul id="notesList" class="list info-list"></ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. Teklif -->
+      <section class="card hidden" id="quoteCard">
+        <div class="card-head">
+          <h2><span class="step">3</span> Teklif taslağı</h2>
+          <button id="addLineBtn" class="btn small ghost" type="button">+ Kalem ekle</button>
+        </div>
+        <div class="quote-controls">
+          <label>Teslim şekli (Incoterm)
+            <select id="incotermSelect"></select>
+          </label>
+          <label>Ek indirim (%)
+            <input id="extraDiscount" type="number" min="0" max="100" step="0.5" value="0">
+          </label>
+        </div>
+        <div class="table-wrap">
+          <table class="table quote-table">
+            <thead>
+              <tr><th>Ürün</th><th class="num">Miktar</th><th class="num">Liste</th><th class="num">Kademe ind.</th><th class="num">Birim fiyat</th><th class="num">Tutar</th><th></th></tr>
+            </thead>
+            <tbody id="quoteBody"></tbody>
+            <tfoot id="quoteFoot"></tfoot>
+          </table>
+        </div>
+        <ul id="quoteWarnings" class="list warn-list"></ul>
+        <p class="muted small-text" id="pricingNote"></p>
+        <div class="actions">
+          <button id="draftBtn" class="btn primary" type="button">E-posta taslağı oluştur</button>
+          <span id="draftStatus" class="muted"></span>
+        </div>
+      </section>
+
+      <!-- 4. E-posta -->
+      <section class="card hidden" id="emailCard">
+        <div class="card-head">
+          <h2><span class="step">4</span> Gönderime hazır e-posta</h2>
+          <span id="emailSource" class="pill"></span>
+        </div>
+        <div id="emailWarning" class="alert warn hidden"></div>
+        <label>Alıcı
+          <input id="emailTo" type="text">
+        </label>
+        <label>Konu
+          <input id="emailSubject" type="text">
+        </label>
+        <label>İçerik
+          <textarea id="emailBody" rows="18"></textarea>
+        </label>
+        <div class="actions">
+          <button id="copyBtn" class="btn" type="button">Kopyala</button>
+          <a id="mailtoBtn" class="btn" href="#">E-posta istemcisinde aç</a>
+          <button id="saveBtn" class="btn primary" type="button">Teklifi kaydet</button>
+          <span id="emailStatus" class="muted"></span>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Ayarlar -->
+  <dialog id="settingsDialog">
+    <form method="dialog" class="dialog-body" id="settingsForm">
+      <h2>Firma ayarları</h2>
+      <p class="muted">Bu bilgiler e-posta imzasında ve teklif koşullarında kullanılır. Tarayıcınızda saklanır.</p>
+      <label>Firma adı <input name="companyName" required></label>
+      <label>Yetkili / imza <input name="contactName" required></label>
+      <div class="grid-2">
+        <label>E-posta <input name="email" type="email"></label>
+        <label>Telefon <input name="phone"></label>
+      </div>
+      <div class="grid-2">
+        <label>Teklif geçerliliği (gün) <input name="validityDays" type="number" min="1" required></label>
+        <label>Varsayılan ödeme koşulu <input name="defaultPaymentTerms"></label>
+      </div>
+      <div class="actions end">
+        <button value="cancel" class="btn ghost" formnovalidate>Vazgeç</button>
+        <button value="save" class="btn primary">Kaydet</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,89 @@
+{
+  "currency": "USD",
+  "basePriceTerm": "FOB",
+  "basePort": "İstanbul (Ambarlı)",
+  "quantityDiscounts": [
+    { "minQuantity": 10000, "percent": 8 },
+    { "minQuantity": 5000, "percent": 5 }
+  ],
+  "incotermAdjustments": {
+    "EXW": -3,
+    "FCA": -1,
+    "FOB": 0,
+    "CFR": 6,
+    "CIF": 7,
+    "DAP": 10
+  },
+  "products": [
+    {
+      "code": "HVL-001",
+      "name": "Pamuk El Havlusu 50x90 cm",
+      "description": "%100 pamuk, 500 g/m², penye iplik",
+      "keywords": ["el havlusu", "50x90", "yüz havlusu", "hand towel"],
+      "unit": "adet",
+      "unitPrice": 3.2,
+      "moq": 1000,
+      "leadTimeDays": 30
+    },
+    {
+      "code": "HVL-002",
+      "name": "Pamuk Banyo Havlusu 70x140 cm",
+      "description": "%100 pamuk, 500 g/m², penye iplik",
+      "keywords": ["banyo havlusu", "70x140", "bath towel"],
+      "unit": "adet",
+      "unitPrice": 5.8,
+      "moq": 1000,
+      "leadTimeDays": 30
+    },
+    {
+      "code": "HVL-003",
+      "name": "Otel Tipi Beyaz Havlu 50x100 cm",
+      "description": "%100 pamuk, 600 g/m², endüstriyel yıkamaya dayanıklı",
+      "keywords": ["otel havlusu", "otel tipi", "beyaz havlu", "50x100", "hotel towel"],
+      "unit": "adet",
+      "unitPrice": 3.6,
+      "moq": 2000,
+      "leadTimeDays": 35
+    },
+    {
+      "code": "BRN-001",
+      "name": "Kadife Bornoz (S-XXL)",
+      "description": "%100 pamuk kadife, şal yaka, kemerli",
+      "keywords": ["bornoz", "kadife bornoz", "bathrobe"],
+      "unit": "adet",
+      "unitPrice": 14.5,
+      "moq": 300,
+      "leadTimeDays": 40
+    },
+    {
+      "code": "NVR-001",
+      "name": "Ranforce Nevresim Takımı – Çift Kişilik",
+      "description": "%100 pamuk ranforce, 4 parça (nevresim, çarşaf, 2 yastık kılıfı)",
+      "keywords": ["çift kişilik nevresim", "nevresim takımı çift", "double duvet", "çift kişilik"],
+      "unit": "takım",
+      "unitPrice": 18.0,
+      "moq": 200,
+      "leadTimeDays": 35
+    },
+    {
+      "code": "NVR-002",
+      "name": "Ranforce Nevresim Takımı – Tek Kişilik",
+      "description": "%100 pamuk ranforce, 3 parça (nevresim, çarşaf, yastık kılıfı)",
+      "keywords": ["tek kişilik nevresim", "nevresim takımı tek", "single duvet", "tek kişilik"],
+      "unit": "takım",
+      "unitPrice": 12.5,
+      "moq": 200,
+      "leadTimeDays": 35
+    },
+    {
+      "code": "PST-001",
+      "name": "Peştemal 90x180 cm",
+      "description": "%100 pamuk, el tezgâhı görünümlü, saçaklı",
+      "keywords": ["peştemal", "pestemal", "hamam havlusu", "plaj havlusu", "90x180"],
+      "unit": "adet",
+      "unitPrice": 6.4,
+      "moq": 500,
+      "leadTimeDays": 25
+    }
+  ]
+}
