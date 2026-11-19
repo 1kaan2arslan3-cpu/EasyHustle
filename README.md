@@ -2,7 +2,7 @@
 
 AI destekli ihracat teklif ve e-posta yönetim sistemi (demo sürüm).
 
-> Kurulum ve yerel demo: **[KURULUM.md](KURULUM.md)** · Lisans: [MIT](LICENSE)
+> Kurulum ve yerel demo: **[KURULUM.md](KURULUM.md)** · Canlıya alma (Railway): [KURULUM.md §11](KURULUM.md#11-canlıya-alma-railway) · Lisans: [MIT](LICENSE)
 
 Gelen müşteri taleplerini analiz eder, ürün kataloğuyla eşleştirir, fiyatları hesaplar ve firmaya **gönderime hazır teklif e-postası taslağı** üretir.
 

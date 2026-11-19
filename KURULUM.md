@@ -232,7 +232,35 @@ GitHub'da repoyu oluşturduktan sonra **Settings → Code security → Secret sc
 
 ---
 
-## 11. Temiz ortamdan demo kontrol listesi
+## 11. Canlıya alma (Railway)
+
+Repo, Railway'in doğrudan kullanacağı dosyaları içerir: `Dockerfile` (Node 24, üretim imajı), `.dockerignore` (gizli dosyalar imaja girmez), `railway.json` (Dockerfile ile derleme, `/api/health` sağlık kontrolü). Her `main` push'unda Railway otomatik yeniden yayınlar; açılışta bekleyen migration'lar uygulanır (`npm run start:prod`).
+
+1. https://railway.com → **Login → GitHub ile giriş**.
+2. **New Project → Deploy from GitHub repo** → Railway'in GitHub uygulamasına `EasyHustle` reposuna erişim izni verin → repoyu seçin. İlk derleme başlar (sağlık kontrolü, değişkenler girilene kadar başarısız olabilir — normal).
+3. Servis → **Settings → Networking → Generate Domain**. Port sorulursa günlükteki `EasyHustle → http://localhost:XXXX` satırındaki portu yazın (Railway `PORT` değişkenini kendisi verir). Oluşan adres: `https://<ad>.up.railway.app`.
+4. Kalıcı veritabanı: proje tuvalinde **+ Create → Volume** → bu servise bağlayın, **Mount path: `/data`**. (Volume olmadan her yeniden yayında hesaplar silinir.)
+5. Servis → **Variables** → şu değişkenleri ekleyin:
+
+   | Değişken | Değer |
+   |---|---|
+   | `APP_URL` | `https://<ad>.up.railway.app` (3. adımdaki adres, sonda `/` olmadan) |
+   | `DATABASE_URL` | `file:/data/easyhustle.db` |
+   | `TRUST_PROXY` | `true` |
+   | `MAIL_FROM` | `EasyHustle <onboarding@resend.dev>` — kendi alan adınızı doğruladıysanız `EasyHustle <no-reply@alanadiniz.com>` |
+   | `RESEND_API_KEY` | Resend anahtarınız (`re_...`) — **kendiniz yapıştırın**, başka yere yazmayın |
+
+   `NODE_ENV` ve `PORT` gerekmez (imaj `production` ile başlar, portu Railway verir).
+6. **Deploy** → **Deployments → View logs**: `All migrations have been successfully applied`, `EasyHustle → … (production)` ve `E-posta: Resend ile gönderiliyor` satırlarını görmelisiniz.
+7. Kontrol: `https://<ad>.up.railway.app/api/health` → `{"status":"ok", … "database":"ok"}`.
+
+> **E-posta sınırı:** `onboarding@resend.dev` yalnızca Resend hesabınızın sahibine gönderir. Başkalarının doğrulama e-postası alabilmesi için §6.3'teki gibi alan adınızı doğrulayıp `MAIL_FROM`'u değiştirin.
+>
+> **Maliyet:** Railway deneme kredisiyle başlar; sonrasında kullanım bazlı ücretlidir (güncel fiyatlar Railway sitesinde). Servisi durdurmak için proje → Settings → **Delete / Remove**.
+
+---
+
+## 12. Temiz ortamdan demo kontrol listesi
 
 - [ ] `node --version` → **v24.7** veya üstü
 - [ ] Projeyi klonla / kopyala ve klasöre gir

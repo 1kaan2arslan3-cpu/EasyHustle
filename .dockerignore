@@ -1,0 +1,18 @@
+# İmaja girmeyecekler: gizli bilgiler, yerel veritabanı, üretilen/geçici dosyalar
+.env
+.env.*
+!.env.example
+*.env
+data/
+*.db
+*.db-*
+*.sqlite*
+node_modules/
+src/generated/
+test/.tmp/
+.git/
+.github/
+*.log
+*.pem
+*.key
+.DS_Store
