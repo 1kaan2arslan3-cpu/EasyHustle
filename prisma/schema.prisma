@@ -1,0 +1,137 @@
+// Veritabanı şeması (Prisma).
+//
+// PostgreSQL'e geçiş:
+//   1. Aşağıda provider = "postgresql" yapın
+//   2. npm install @prisma/adapter-pg pg   (src/db.js bağlantı adresine göre adaptörü kendisi seçer)
+//   3. .env içinde DATABASE_URL="postgresql://kullanici:sifre@sunucu:5432/veritabani"
+//   4. prisma/migrations klasörünü silip: npx prisma migrate dev --name init
+// Şemada SQLite'a özgü bir özellik kullanılmadığı için modellerde değişiklik gerekmez.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum EmailTokenType {
+  verify
+  reset
+}
+
+enum QuoteStatus {
+  draft
+  sent
+  accepted
+  rejected
+}
+
+/// Uygulama kullanıcısı. Şifre asla düz metin saklanmaz: passwordHash = scrypt (tuz + parametreler dahil).
+model User {
+  id            String   @id @default(uuid())
+  username      String
+  email         String   @unique /// her zaman küçük harfe çevrilerek saklanır
+  passwordHash  String
+  emailVerified Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  sessions    Session[]
+  emailTokens EmailToken[]
+  settings    CompanySettings?
+  quotes      Quote[]
+  emailLogs   EmailLog[]
+
+  @@map("users")
+}
+
+/// Oturum. Çerezdeki token'ın yalnızca SHA-256 özeti saklanır.
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+/// Tek kullanımlık e-posta doğrulama / şifre sıfırlama token'ı (yalnızca özeti saklanır).
+model EmailToken {
+  id        String         @id @default(uuid())
+  userId    String
+  type      EmailTokenType
+  tokenHash String         @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime       @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
+  @@map("email_tokens")
+}
+
+/// Teklif e-postalarındaki imza ve koşullar (kullanıcı başına bir kayıt).
+model CompanySettings {
+  userId              String   @id
+  companyName         String
+  contactName         String
+  email               String?
+  phone               String?
+  validityDays        Int
+  defaultPaymentTerms String?
+  updatedAt           DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("company_settings")
+}
+
+/// Kaydedilmiş teklif. request / analysis / quoteInput / email, arayüzün kullandığı JSON yapılarıdır.
+model Quote {
+  id              String      @id
+  userId          String
+  customerCompany String?
+  customerEmail   String?
+  subject         String?
+  request         Json
+  analysis        Json
+  quoteInput      Json
+  email           Json?
+  total           Float
+  currency        String
+  status          QuoteStatus @default(draft)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emailLogs EmailLog[]
+
+  @@index([userId, updatedAt])
+  @@map("quotes")
+}
+
+/// Uygulama üzerinden gönderilen e-postaların kaydı.
+model EmailLog {
+  id                String   @id @default(uuid())
+  userId            String
+  quoteId           String?
+  toAddress         String
+  subject           String
+  sentAt            DateTime @default(now())
+  delivered         Boolean
+  providerMessageId String?
+  error             String?
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quote Quote? @relation(fields: [quoteId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@map("email_log")
+}

@@ -19,7 +19,9 @@
     </div>
     <div class="topbar-actions">
       <span id="modeBadge" class="badge">Bağlanıyor…</span>
+      <span id="userChip" class="badge user-chip hidden"></span>
       <button id="settingsBtn" class="btn ghost" type="button">Firma ayarları</button>
+      <button id="logoutBtn" class="btn ghost hidden" type="button">Çıkış yap</button>
     </div>
   </header>
 
@@ -39,6 +41,11 @@
     </aside>
 
     <main class="workspace">
+      <div id="verifyBanner" class="alert warn hidden" role="status">
+        <span id="verifyBannerText">E-posta adresiniz henüz doğrulanmadı. Teklif e-postası gönderebilmek için gelen kutunuzdaki bağlantıyı açın.</span>
+        <button id="resendVerifyBtn" class="link-btn" type="button">Doğrulama e-postasını tekrar gönder</button>
+      </div>
+
       <!-- 1. Talep -->
       <section class="card" id="requestCard">
         <div class="card-head">
@@ -139,6 +146,7 @@
         <div class="actions">
           <button id="copyBtn" class="btn" type="button">Kopyala</button>
           <a id="mailtoBtn" class="btn" href="#">E-posta istemcisinde aç</a>
+          <button id="sendBtn" class="btn hidden" type="button">Gönder</button>
           <button id="saveBtn" class="btn primary" type="button">Teklifi kaydet</button>
           <span id="emailStatus" class="muted"></span>
         </div>
@@ -150,7 +158,7 @@
   <dialog id="settingsDialog">
     <form method="dialog" class="dialog-body" id="settingsForm">
       <h2>Firma ayarları</h2>
-      <p class="muted">Bu bilgiler e-posta imzasında ve teklif koşullarında kullanılır. Tarayıcınızda saklanır.</p>
+      <p class="muted" id="settingsHint">Bu bilgiler e-posta imzasında ve teklif koşullarında kullanılır. Tarayıcınızda saklanır.</p>
       <label>Firma adı <input name="companyName" required></label>
       <label>Yetkili / imza <input name="contactName" required></label>
       <div class="grid-2">
@@ -166,6 +174,73 @@
         <button value="save" class="btn primary">Kaydet</button>
       </div>
     </form>
+  </dialog>
+
+  <!-- Hesap: giriş / kayıt / şifre sıfırlama -->
+  <dialog id="authDialog" aria-labelledby="authTitle">
+    <div class="dialog-body">
+      <form class="auth-view" data-view="login" novalidate>
+        <h2 id="authTitle">Giriş yap</h2>
+        <p class="muted">Teklifleriniz ve firma ayarlarınız hesabınızda saklanır.</p>
+        <label>E-posta <input name="email" type="email" autocomplete="email" required></label>
+        <label>Şifre <input name="password" type="password" autocomplete="current-password" required></label>
+        <p class="alert ok hidden" data-success role="status"></p>
+        <p class="alert warn hidden" data-error role="alert"></p>
+        <div class="actions auth-actions">
+          <button class="link-btn" type="button" data-goto="forgot">Şifremi unuttum</button>
+          <button class="btn primary" type="submit" data-loading="Giriş yapılıyor…">Giriş yap</button>
+        </div>
+        <p class="muted auth-switch">Hesabınız yok mu? <button class="link-btn" type="button" data-goto="register">Kayıt olun</button></p>
+      </form>
+
+      <form class="auth-view hidden" data-view="register" novalidate>
+        <h2>Kayıt ol</h2>
+        <p class="muted">Ücretsiz hesap oluşturun; doğrulama bağlantısı e-posta adresinize gönderilir.</p>
+        <label>Ad soyad <input name="name" autocomplete="name" required></label>
+        <label>E-posta <input name="email" type="email" autocomplete="email" required></label>
+        <label>Şifre (en az 8 karakter) <input name="password" type="password" autocomplete="new-password" minlength="8" required></label>
+        <p class="alert warn hidden" data-error role="alert"></p>
+        <div class="actions end">
+          <button class="btn primary" type="submit" data-loading="Hesap oluşturuluyor…">Kayıt ol</button>
+        </div>
+        <p class="muted auth-switch">Zaten hesabınız var mı? <button class="link-btn" type="button" data-goto="login">Giriş yapın</button></p>
+      </form>
+
+      <form class="auth-view hidden" data-view="forgot" novalidate>
+        <h2>Şifremi unuttum</h2>
+        <p class="muted">Hesabınızın e-posta adresini girin; şifre sıfırlama bağlantısı gönderelim.</p>
+        <label>E-posta <input name="email" type="email" autocomplete="email" required></label>
+        <p class="alert warn hidden" data-error role="alert"></p>
+        <p class="alert ok hidden" data-success role="status"></p>
+        <div class="actions auth-actions">
+          <button class="link-btn" type="button" data-goto="login">← Girişe dön</button>
+          <button class="btn primary" type="submit" data-loading="Gönderiliyor…">Bağlantı gönder</button>
+        </div>
+      </form>
+
+      <form class="auth-view hidden" data-view="reset" novalidate>
+        <h2>Yeni şifre belirleyin</h2>
+        <label>Yeni şifre (en az 8 karakter) <input name="password" type="password" autocomplete="new-password" minlength="8" required></label>
+        <p class="alert warn hidden" data-error role="alert"></p>
+        <div class="actions auth-actions">
+          <button class="link-btn" type="button" data-goto="login">← Girişe dön</button>
+          <button class="btn primary" type="submit" data-loading="Güncelleniyor…">Şifreyi güncelle</button>
+        </div>
+      </form>
+
+      <!-- Kayıttan hemen sonra: e-posta doğrulama bilgisi -->
+      <form class="auth-view hidden" data-view="verify-notice" method="dialog">
+        <h2>E-posta adresinizi doğrulayın</h2>
+        <p class="alert ok hidden" data-success role="status"></p>
+        <p class="alert warn hidden" data-error role="alert"></p>
+        <p id="verifyNoticeText"></p>
+        <p class="muted small-text" id="verifyNoticeHint">E-posta birkaç dakika içinde gelmezse spam / gereksiz klasörünü kontrol edin. Doğrulamadan da uygulamayı kullanabilirsiniz; yalnızca teklif e-postası gönderme doğrulama gerektirir.</p>
+        <div class="actions auth-actions">
+          <button class="link-btn" type="button" id="verifyNoticeResend">Doğrulama e-postasını tekrar gönder</button>
+          <button class="btn primary" type="submit" value="continue">Uygulamaya devam et</button>
+        </div>
+      </form>
+    </div>
   </dialog>
 
   <script type="module" src="js/app.js"></script>

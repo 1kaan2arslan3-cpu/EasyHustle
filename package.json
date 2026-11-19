@@ -4,19 +4,35 @@
   "description": "AI destekli ihracat teklif ve e-posta yönetim sistemi (demo)",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "postinstall": "prisma generate",
+    "predev": "prisma migrate deploy",
     "dev": "node --watch server.js",
-    "test": "node --test"
+    "prestart": "prisma migrate deploy",
+    "start": "node server.js",
+    "start:prod": "prisma migrate deploy && node server.js --production",
+    "test": "node --test test/*.test.js",
+    "health": "node -e \"fetch('http://localhost:'+(process.env.PORT||3000)+'/api/health').then(async r=>{console.log(r.status, await r.text());process.exit(r.ok?0:1)}).catch(e=>{console.error(e.message);process.exit(1)})\"",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:generate": "prisma generate",
+    "db:studio": "prisma studio",
+    "db:import-legacy": "node scripts/import-legacy-db.js",
+    "check:secrets": "node scripts/check-secrets.js --history"
   },
   "license": "MIT",
   "dependencies": {
     "@anthropic-ai/sdk": "^1.10.0",
-    "dotenv": "^18.0.10",
+    "@prisma/adapter-better-sqlite3": "7.10.1",
+    "@prisma/client": "7.10.1",
+    "cookie-parser": "^1.4.7",
     "express": "^5.3.0",
+    "express-rate-limit": "^8.7.5",
+    "helmet": "^8.3.0",
+    "prisma": "7.10.1",
     "zod": "^4.6.7"
   },
   "type": "module",
   "engines": {
-    "node": ">=20"
+    "node": ">=24.7"
   }
 }

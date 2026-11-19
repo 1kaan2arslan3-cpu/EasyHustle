@@ -1,55 +1,72 @@
-import 'dotenv/config';
-import express from 'express';
-import { readFile } from 'node:fs/promises';
+// Sunucuyu başlatır: .env → yapılandırma → veritabanı → e-posta → Express.
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
-import { analyzeWithAI, draftEmailWithAI, isAiConfigured, MODEL } from './src/ai.js';
-import { analyzeRequestDemo, draftEmailTemplate } from './public/js/demo-analyzer.js';
+const rootDir = path.dirname(fileURLToPath(import.meta.url));
 
-const here = path.dirname(fileURLToPath(import.meta.url));
-const publicDir = path.join(here, 'public');
-const catalog = JSON.parse(await readFile(path.join(publicDir, 'data', 'catalog.json'), 'utf8'));
+// .env dosyasını (varsa) yükle. Ortamda zaten tanımlı değişkenler ezilmez.
+try {
+  process.loadEnvFile(path.join(rootDir, '.env'));
+} catch (err) {
+  if (err.code !== 'ENOENT') throw err;
+}
+if (process.argv.includes('--production')) process.env.NODE_ENV = 'production';
 
-const app = express();
-app.use(express.json({ limit: '1mb' }));
-app.use(express.static(publicDir));
+// Yapılandırma .env yüklendikten sonra okunmalı (ai.js modül yüklenirken ortamı okur)
+const { loadConfig } = await import('./src/config.js');
+const { createApp } = await import('./src/app.js');
+const { isAiConfigured, MODEL } = await import('./src/ai.js');
+const { createDb, connectDb } = await import('./src/db.js');
+const { createEmailServiceFromConfig } = await import('./src/email/service.js');
 
-app.get('/api/status', (_req, res) => {
-  const ai = isAiConfigured();
-  res.json({ mode: ai ? 'ai' : 'demo', model: ai ? MODEL : null });
-});
+let config;
+try {
+  config = loadConfig(process.env, rootDir);
+} catch (err) {
+  console.error(err.message);
+  process.exit(1);
+}
 
-app.post('/api/analyze', async (req, res) => {
-  const { from = '', subject = '', body = '' } = req.body || {};
-  if (!body.trim()) return res.status(400).json({ error: 'Talep metni boş olamaz.' });
-  const request = { from, subject, body };
+const db = await createDb(config.databaseUrl);
+try {
+  await connectDb(db);
+} catch (err) {
+  console.error(err.message);
+  await db.$disconnect().catch(() => {});
+  process.exit(1);
+}
+const email = createEmailServiceFromConfig(config);
+const app = createApp({ db, email, config });
 
-  if (!isAiConfigured()) return res.json(analyzeRequestDemo(request, catalog));
-  try {
-    res.json(await analyzeWithAI(request, catalog));
-  } catch (err) {
-    console.error('[analyze] AI hatası:', err);
-    res.json({ ...analyzeRequestDemo(request, catalog), warning: `AI analizi başarısız oldu, demo analiz kullanıldı: ${err.message}` });
-  }
-});
-
-app.post('/api/draft-email', async (req, res) => {
-  const { request, analysis, quote, settings } = req.body || {};
-  if (!request || !analysis || !quote || !settings) {
-    return res.status(400).json({ error: 'request, analysis, quote ve settings alanları zorunludur.' });
-  }
-  if (!isAiConfigured()) return res.json(draftEmailTemplate({ request, analysis, quote, settings }));
-  try {
-    res.json(await draftEmailWithAI({ request, analysis, quote, settings }));
-  } catch (err) {
-    console.error('[draft-email] AI hatası:', err);
-    res.json({ ...draftEmailTemplate({ request, analysis, quote, settings }), warning: `AI taslağı başarısız oldu, şablon kullanıldı: ${err.message}` });
-  }
-});
-
-const port = Number(process.env.PORT) || 3000;
-app.listen(port, () => {
-  console.log(`İhracat Teklif Asistanı → http://localhost:${port}`);
+const server = app.listen(config.port, () => {
+  console.log(`İhracat Teklif Asistanı → http://localhost:${config.port}  (${config.env})`);
+  console.log(`Sağlık kontrolü: http://localhost:${config.port}/api/health`);
   console.log(isAiConfigured() ? `Mod: AI (${MODEL})` : 'Mod: DEMO (kural tabanlı) — AI için .env dosyasına ANTHROPIC_API_KEY ekleyin.');
+  console.log(`Veritabanı: ${config.databaseUrl.startsWith('file:') ? config.databaseUrl : config.databaseUrl.replace(/\/\/[^@]*@/, '//***@')}`);
+  // API anahtarı asla yazdırılmaz; yalnızca sağlayıcı adı ve gönderen adresi
+  console.log(
+    email.delivers
+      ? `E-posta: Resend ile gönderiliyor (gönderen: ${config.email.from})`
+      : 'E-posta: geliştirme modu (gönderilmez, konsola yazılır) — göndermek için .env dosyasına RESEND_API_KEY ekleyin.',
+  );
+  if (config.corsOrigins.length) console.log(`CORS izinli adresler: ${config.corsOrigins.join(', ')}`);
+  if (config.isProduction && !email.delivers) console.warn('UYARI: Canlı ortamda RESEND_API_KEY tanımlı değil; doğrulama/sıfırlama e-postaları gönderilmeyecek.');
 });
+
+server.on('error', (err) => {
+  console.error(err.code === 'EADDRINUSE' ? `Port ${config.port} kullanımda. .env içinde PORT değiştirin.` : err);
+  process.exit(1);
+});
+
+// Düzgün kapanış (Ctrl+C, deploy yeniden başlatmaları)
+function shutdown(signal) {
+  console.log(`\n${signal} alındı, sunucu kapatılıyor…`);
+  server.close(async () => {
+    await db.$disconnect().catch(() => {});
+    process.exit(0);
+  });
+  setTimeout(() => process.exit(1), 10_000).unref();
+}
+process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('unhandledRejection', (reason) => console.error('[yakalanmamış hata]', reason));
